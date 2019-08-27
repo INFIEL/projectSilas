@@ -1,0 +1,68 @@
+//const campaigns = require("./campaigns");
+const GoogleSheetsController = require("./GoogleSheetsController");
+
+CreateCampaignController = {
+  campaignCreator: async function createCampaigns(page, amount, browser) {
+    console.log("");
+    console.log("=======================================");
+    console.log("   Upload de campanhas inicializado!   ");
+    console.log("=======================================");
+    console.log("");
+    const campaigns = await GoogleSheetsController.getCampaings(amount);
+    for (let i = 0; i < campaigns.length; i++) {
+      await page.goto(
+        `https://panel.soclminer.com.br/app/${campaigns[i].customer}`,
+        { waitUntil: "load", timeout: 0 }
+        );
+      // go to manual campaign creation
+      page.goto(
+        "https://panel.soclminer.com.br/plugin/onsite/Create",
+        { waitUntil: "load", timeout: 0 }
+      );
+      
+      await page.waitForSelector("#btnTest");
+      await page.waitFor(2000);
+      await page.waitForSelector("#linkRedirect");
+      await page.type("#linkRedirect", campaigns[i].link);
+      await page.click("#scheduleCampaign");
+      await page.waitFor(2000);
+      await page.evaluate(
+        () => (document.querySelector("#campaignStartDate").value = "")
+      );
+      if (campaigns[i].image == "sim") {
+        await page.click("#campaignImage");
+      }
+      await page.type("#campaignStartDate", campaigns[i].start);
+      await page.type("#campaignName", campaigns[i].name);
+      await page.type("#title", campaigns[i].title);
+      await page.type("#message", campaigns[i].message);
+      await page.waitFor(1000);
+      await page.click("#AudienceId");
+      await page.select("#AudienceId", campaigns[i].audience);
+      await page.waitFor(2000);
+      await page.click("#btnTest");
+      await page.waitFor(3000);
+      console.log(campaigns[i].test);
+      if (campaigns[i].test == 'Não') {
+        await page.waitFor(1000);
+        const pages = await browser.pages();
+        //console.log(pages);
+        const link = pages[pages.length - 1];
+        await page.waitFor(1000);
+        await link.close();
+        await page.waitFor(1000);
+      }
+      await page.waitForSelector("#btnSave");
+      await page.waitFor(3000);
+      await page.click("#btnSave");
+      await page.waitFor(2000);
+      await page.waitForSelector("#submitAutomaticPush");
+      await page.click("#submitAutomaticPush");
+      console.log(`Campanha '${campaigns[i].name}' concluída!`);
+      console.log(`${i + 1} de ${campaigns.length} Feito`);
+      console.log("");
+    }
+  }
+};
+
+module.exports = CreateCampaignController;
